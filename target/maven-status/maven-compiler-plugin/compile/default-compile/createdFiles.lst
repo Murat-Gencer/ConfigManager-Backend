@@ -1,0 +1,12 @@
+com/configmanager/service/DataLoader.class
+com/configmanager/repository/UserRepository.class
+com/configmanager/service/ConfigurationService.class
+com/configmanager/controller/ConfigurationController.class
+com/configmanager/entity/User.class
+com/configmanager/ConfigManagerApplication.class
+com/configmanager/entity/ApiKey.class
+com/configmanager/repository/ConfigurationRepository.class
+com/configmanager/entity/Configuration.class
+com/configmanager/config/SecurityConfig.class
+com/configmanager/repository/ApiKeyRepository.class
+com/configmanager/entity/Role.class

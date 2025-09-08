@@ -1,0 +1,12 @@
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/repository/ApiKeyRepository.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/service/ConfigurationService.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/entity/User.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/controller/ConfigurationController.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/service/DataLoader.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/entity/ApiKey.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/entity/Role.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/ConfigManagerApplication.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/entity/Configuration.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/config/SecurityConfig.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/repository/UserRepository.java
+/home/murat-gencer/projects/ConfigManager/backend/src/main/java/com/configmanager/repository/ConfigurationRepository.java
