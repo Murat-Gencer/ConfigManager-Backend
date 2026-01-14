@@ -1,6 +1,7 @@
 package com.configmanager.service;
 
 import com.configmanager.entity.Configuration;
+import com.configmanager.entity.User;
 import com.configmanager.repository.ConfigurationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,10 @@ public class ConfigurationService {
         return configurationRepository.save(configuration);
     }
     
+    public List<Configuration> saveAll(List<Configuration> configs) {
+        return configurationRepository.saveAll(configs);
+    }
+    
     public Configuration updateConfiguration(String key, String environment, Configuration updatedConfig) {
         Optional<Configuration> existingConfig = configurationRepository.findByKeyAndEnvironment(key, environment);
         
@@ -62,8 +67,20 @@ public class ConfigurationService {
         return configurationRepository.findByEnvironmentAndKeyContaining(environment, searchTerm);
     }
     
-    public boolean existsConfiguration(String key, String environment) {
-        return configurationRepository.existsByKeyAndEnvironment(key, environment);
+    public List<Configuration> getAllConfigurationsByUser(User user) {
+        return configurationRepository.findByUser(user);
+    }
+
+    public List<Configuration> getConfigurationsByEnvironmentAndUser(String environment, User user) {
+        return configurationRepository.findByEnvironmentAndUserOrderByKeyAsc(environment, user);
+    }
+
+    public Optional<Configuration> getConfigurationByKeyEnvironmentAndUser(String key, String environment, User user) {
+        return configurationRepository.findByKeyAndEnvironmentAndUser(key, environment, user);
+    }
+
+    public boolean existsConfiguration(String key, String environment, User user) {
+        return configurationRepository.existsByKeyAndEnvironmentAndUser(key, environment, user);
     }
     
     public Map<String, String> getConfigurationsAsMap(String environment) {

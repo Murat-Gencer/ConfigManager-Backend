@@ -48,6 +48,10 @@ public class Configuration {
     @Column(name = "updated_by")
     private String updatedBy;
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -101,4 +105,7 @@ public class Configuration {
     
     public String getUpdatedBy() { return updatedBy; }
     public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
+    
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 }

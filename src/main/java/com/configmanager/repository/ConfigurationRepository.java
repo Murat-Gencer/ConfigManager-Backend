@@ -1,6 +1,7 @@
 package com.configmanager.repository;
 
 import com.configmanager.entity.Configuration;
+import com.configmanager.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +29,12 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
     boolean existsByKeyAndEnvironment(String key, String environment);
     
     void deleteByKeyAndEnvironment(String key, String environment);
+    
+    List<Configuration> findByUser(User user);
+    
+    List<Configuration> findByEnvironmentAndUserOrderByKeyAsc(String environment, User user);
+    
+    Optional<Configuration> findByKeyAndEnvironmentAndUser(String key, String environment, User user);
+    
+    boolean existsByKeyAndEnvironmentAndUser(String key, String environment, User user);
 }

@@ -22,8 +22,7 @@ fi
 echo "✅ Java version check passed"
 
 # Check if Maven wrapper exists
-if [ ! -f "./mvnw" ]; then
-    echo "❌ Maven wrapper not found. Please ensure mvnw exists in the backend directory."
+if [ ! -f "./mvnw" ]; then    echo "❌ Maven wrapper not found. Please ensure mvnw exists in the backend directory."
     exit 1
 fi
 
