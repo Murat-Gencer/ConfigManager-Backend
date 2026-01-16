@@ -1,8 +1,13 @@
 package com.configmanager.controller;
 
+import com.configmanager.dto.ConfigDTO;
+import com.configmanager.dto.CreateConfigRequestDTO;
+import com.configmanager.dto.UpdateConfigRequestDTO;
 import com.configmanager.entity.Configuration;
 import com.configmanager.entity.User;
+import com.configmanager.mapper.DTOMapper;
 import com.configmanager.service.ConfigurationService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -17,6 +22,7 @@ import com.configmanager.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/config")
@@ -29,6 +35,9 @@ public class ConfigurationController {
     @Autowired
     private UserRepository userRepository;
     
+    @Autowired
+    private DTOMapper dtoMapper;
+    
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -36,11 +45,14 @@ public class ConfigurationController {
     }
     
     @GetMapping
-    public ResponseEntity<List<Configuration>> getAllConfigurations() {
+    public ResponseEntity<List<ConfigDTO>> getAllConfigurations() {
         User user = getCurrentUser();
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         List<Configuration> configurations = configurationService.getAllConfigurationsByUser(user);
-        return ResponseEntity.ok(configurations);
+        List<ConfigDTO> configDTOs = configurations.stream()
+            .map(dtoMapper::toConfigDTO)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(configDTOs);
     }
     
     @GetMapping("/environments")
@@ -50,11 +62,14 @@ public class ConfigurationController {
     }
     
     @GetMapping("/{environment}")
-    public ResponseEntity<List<Configuration>> getConfigurationsByEnvironment(@PathVariable String environment) {
+    public ResponseEntity<List<ConfigDTO>> getConfigurationsByEnvironment(@PathVariable String environment) {
         User user = getCurrentUser();
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         List<Configuration> configurations = configurationService.getConfigurationsByEnvironmentAndUser(environment, user);
-        return ResponseEntity.ok(configurations);
+        List<ConfigDTO> configDTOs = configurations.stream()
+            .map(dtoMapper::toConfigDTO)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(configDTOs);
     }
     
     @GetMapping("/{environment}/map")
@@ -75,34 +90,52 @@ public class ConfigurationController {
     }
     
     @GetMapping("/{environment}/{key}")
-    public ResponseEntity<Configuration> getConfiguration(@PathVariable String environment, @PathVariable String key) {
+    public ResponseEntity<ConfigDTO> getConfiguration(@PathVariable String environment, @PathVariable String key) {
         User user = getCurrentUser();
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<Configuration> configuration = configurationService.getConfigurationByKeyEnvironmentAndUser(key, environment, user);
-        return configuration.map(ResponseEntity::ok)
+        return configuration.map(config -> ResponseEntity.ok(dtoMapper.toConfigDTO(config)))
                           .orElse(ResponseEntity.notFound().build());
     }
     
     @PostMapping
-    public ResponseEntity<Configuration> createConfiguration(@RequestBody Configuration configuration) {
+    public ResponseEntity<ConfigDTO> createConfiguration(@Valid @RequestBody CreateConfigRequestDTO configRequest) {
         User user = getCurrentUser();
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        configuration.setUser(user);
+        
+        Configuration configuration = dtoMapper.toConfigEntity(configRequest, user);
+        
         if (configurationService.existsConfiguration(configuration.getKey(), configuration.getEnvironment(), user)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         Configuration savedConfig = configurationService.saveConfiguration(configuration);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedConfig);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dtoMapper.toConfigDTO(savedConfig));
     }
     
     @PutMapping("/{environment}/{key}")
-    public ResponseEntity<Configuration> updateConfiguration(
+    public ResponseEntity<ConfigDTO> updateConfiguration(
             @PathVariable String environment,
             @PathVariable String key,
-            @RequestBody Configuration configuration) {
+            @Valid @RequestBody UpdateConfigRequestDTO configRequest) {
         try {
-            Configuration updatedConfig = configurationService.updateConfiguration(key, environment, configuration);
-            return ResponseEntity.ok(updatedConfig);
+            User user = getCurrentUser();
+            if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            
+            Optional<Configuration> existingConfigOpt = configurationService.getConfigurationByKeyEnvironmentAndUser(key, environment, user);
+            if (existingConfigOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Configuration existingConfig = existingConfigOpt.get();
+            if (configRequest.getValue() != null) {
+                existingConfig.setValue(configRequest.getValue());
+            }
+            if (configRequest.getDescription() != null) {
+                existingConfig.setDescription(configRequest.getDescription());
+            }
+            
+            Configuration updatedConfig = configurationService.saveConfiguration(existingConfig);
+            return ResponseEntity.ok(dtoMapper.toConfigDTO(updatedConfig));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
@@ -126,23 +159,29 @@ public class ConfigurationController {
     }
     
     @GetMapping("/{environment}/search")
-    public ResponseEntity<List<Configuration>> searchConfigurations(
+    public ResponseEntity<List<ConfigDTO>> searchConfigurations(
             @PathVariable String environment,
             @RequestParam String q) {
         List<Configuration> configurations = configurationService.searchConfigurations(environment, q);
-        return ResponseEntity.ok(configurations);
+        List<ConfigDTO> configDTOs = configurations.stream()
+            .map(dtoMapper::toConfigDTO)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(configDTOs);
     }
     
     @PostMapping("/batch")
-    public ResponseEntity<?> createConfigurationsBatch(@RequestBody BatchConfigRequest request) {
+    public ResponseEntity<?> createConfigurationsBatch(@Valid @RequestBody com.configmanager.dto.BatchConfigRequestDTO request) {
         try {
+            User user = getCurrentUser();
+            if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            
             List<Configuration> configs = request.getConfigs().entrySet().stream()
                 .map(entry -> {
                     Configuration config = new Configuration();
                     config.setKey(entry.getKey());
                     config.setValue(entry.getValue());
                     config.setEnvironment(request.getEnvironment());
-                    config.setUser(request.getUser()); // User nesnesi frontend'den veya backend'den alınmalı
+                    config.setUser(user);
                     config.setCreatedBy(request.getCreatedBy() != null ? request.getCreatedBy() : "batch");
                     config.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : "batch");
                     return config;
@@ -153,25 +192,5 @@ public class ConfigurationController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-    }
-    
-    // DTO for batch insert
-    class BatchConfigRequest {
-        private Map<String, String> configs;
-        private String environment;
-        private com.configmanager.entity.User user;
-        private String createdBy;
-        private String updatedBy;
-        // getters and setters
-        public Map<String, String> getConfigs() { return configs; }
-        public void setConfigs(Map<String, String> configs) { this.configs = configs; }
-        public String getEnvironment() { return environment; }
-        public void setEnvironment(String environment) { this.environment = environment; }
-        public com.configmanager.entity.User getUser() { return user; }
-        public void setUser(com.configmanager.entity.User user) { this.user = user; }
-        public String getCreatedBy() { return createdBy; }
-        public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
-        public String getUpdatedBy() { return updatedBy; }
-        public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
     }
 }

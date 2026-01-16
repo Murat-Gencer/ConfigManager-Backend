@@ -1,9 +1,13 @@
 package com.configmanager.controller;
 
+import com.configmanager.dto.LoginRequestDTO;
+import com.configmanager.dto.LoginResponseDTO;
 import com.configmanager.entity.User;
+import com.configmanager.mapper.DTOMapper;
 import com.configmanager.repository.UserRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -13,8 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 
@@ -27,6 +29,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private DTOMapper dtoMapper;
 
     @Value("${app.jwt.secret}")
     private String jwtSecret;
@@ -35,7 +40,7 @@ public class AuthController {
     private final long jwtExpirationMs = 86400000; // 1 gün
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         Optional<User> userOpt = userRepository.findByUsername(loginRequest.getUsernameOrEmail());
         if (userOpt.isEmpty()) {
             userOpt = userRepository.findByEmail(loginRequest.getUsernameOrEmail());
@@ -48,10 +53,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Şifre hatalı");
         }
         String token = generateJwtToken(user);
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("userId", user.getId());
-        response.put("username", user.getUsername());
+        LoginResponseDTO response = dtoMapper.toLoginResponseDTO(user, token);
         return ResponseEntity.ok(response);
     }
 
@@ -63,14 +65,5 @@ public class AuthController {
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(SignatureAlgorithm.HS512, jwtSecret.getBytes(StandardCharsets.UTF_8))
                 .compact();
-    }
-
-    static class LoginRequest {
-        private String usernameOrEmail;
-        private String password;
-        public String getUsernameOrEmail() { return usernameOrEmail; }
-        public void setUsernameOrEmail(String usernameOrEmail) { this.usernameOrEmail = usernameOrEmail; }
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
     }
 }
