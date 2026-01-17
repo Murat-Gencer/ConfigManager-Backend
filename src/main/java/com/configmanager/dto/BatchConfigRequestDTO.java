@@ -2,19 +2,28 @@ package com.configmanager.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Map;
 
 public class BatchConfigRequestDTO {
-    
+
+    @NotNull(message = "Project ID is required")
+    private Long projectId;
+
+    public Long getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
+    }
+
     @NotEmpty(message = "Configs map cannot be empty")
     private Map<String, String> configs;
-    
+
     @NotBlank(message = "Environment is required")
     private String environment;
-    
-    private String createdBy;
-    private String updatedBy;
 
     public Map<String, String> getConfigs() {
         return configs;
@@ -32,19 +41,4 @@ public class BatchConfigRequestDTO {
         this.environment = environment;
     }
 
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
-    }
 }
