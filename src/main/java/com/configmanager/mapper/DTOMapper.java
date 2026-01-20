@@ -25,19 +25,24 @@ public class DTOMapper {
                 .id(config.getId())
                 .key(config.getKey())
                 .value(config.getValue())
+                .projectId(config.getProject().getId())
+                .environment(config.getEnvironment())
+                .isSensitive(config.getIsSensitive())
+                .isEncrypted(config.getIsEncrypted())
                 .description(config.getDescription())
                 .createdAt(config.getCreatedAt())
                 .updatedAt(config.getUpdatedAt())
                 .build();
     }
 
-    public Configuration toConfigEntity(CreateConfigRequestDTO dto, User user) {
+    public Configuration toConfigEntity(CreateConfigRequestDTO dto, User user , Project project) {
         Configuration config = new Configuration();
         config.setKey(dto.getKey());
         config.setValue(dto.getValue());
         config.setDescription(dto.getDescription());
         config.setEnvironment(dto.getEnvironment());
         config.setUser(user);
+        config.setProject(project);
         return config;
     }
 

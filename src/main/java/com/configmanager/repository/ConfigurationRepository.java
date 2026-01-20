@@ -29,17 +29,20 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
 
     boolean existsByKeyAndEnvironment(String key, String environment);
 
-    void deleteByKeyAndEnvironment(String key, String environment);
+    void deleteByIdAndEnvironment(Long id, String environment);
 
     List<Configuration> findByUser(User user);
 
     List<Configuration> findByEnvironmentAndUserOrderByKeyAsc(String environment, User user);
 
-    Optional<Configuration> findByKeyAndEnvironmentAndUser(String key, String environment, User user);
+    Optional<Configuration> findByKeyAndEnvironmentAndUserAndProjectId(String key, String environment, User user , Long projectId);
 
     boolean existsByKeyAndEnvironmentAndUser(String key, String environment, User user);
+    boolean existsByIdAndEnvironmentAndUser(Long id, String environment, User user);
 
     Optional<Configuration> findByKeyAndEnvironmentAndProject(String key, String environment, Project project);
+
+    List<Configuration> findByEnvironmentAndUserAndProjectIdOrderByKeyAsc(String environment, User user, Long projectId);
 
     List<Configuration> findByProject(Project project);
 

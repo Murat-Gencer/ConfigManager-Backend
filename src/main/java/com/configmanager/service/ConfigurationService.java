@@ -56,8 +56,8 @@ public class ConfigurationService {
         }
     }
 
-    public void deleteConfiguration(String key, String environment) {
-        configurationRepository.deleteByKeyAndEnvironment(key, environment);
+    public void deleteConfiguration(Long id, String environment) {
+        configurationRepository.deleteByIdAndEnvironment(id, environment);
     }
 
     public List<String> getEnvironments() {
@@ -72,16 +72,16 @@ public class ConfigurationService {
         return configurationRepository.findByUser(user);
     }
 
-    public List<Configuration> getConfigurationsByEnvironmentAndUser(String environment, User user) {
-        return configurationRepository.findByEnvironmentAndUserOrderByKeyAsc(environment, user);
+    public List<Configuration> getConfigurationsByEnvironmentAndUserAndProjectID(String environment, User user, Long projectId) {
+        return configurationRepository.findByEnvironmentAndUserAndProjectIdOrderByKeyAsc(environment, user, projectId);
     }
 
-    public Optional<Configuration> getConfigurationByKeyEnvironmentAndUser(String key, String environment, User user) {
-        return configurationRepository.findByKeyAndEnvironmentAndUser(key, environment, user);
+    public Optional<Configuration> getConfigurationByKeyEnvironmentAndUser(String key, String environment, User user , Long projectId) {
+        return configurationRepository.findByKeyAndEnvironmentAndUserAndProjectId(key, environment, user, projectId);
     }
 
-    public boolean existsConfiguration(String key, String environment, User user) {
-        return configurationRepository.existsByKeyAndEnvironmentAndUser(key, environment, user);
+    public boolean existsConfiguration(Long id, String environment, User user) {
+        return configurationRepository.existsByIdAndEnvironmentAndUser(id, environment, user);
     }
 
     public Map<String, String> getConfigurationsAsMap(String environment) {

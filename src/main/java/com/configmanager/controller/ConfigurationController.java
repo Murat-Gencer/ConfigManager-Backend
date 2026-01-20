@@ -70,13 +70,13 @@ public class ConfigurationController {
         return ResponseEntity.ok(environments);
     }
 
-    @GetMapping("/{environment}")
-    public ResponseEntity<List<ConfigDTO>> getConfigurationsByEnvironment(@PathVariable String environment) {
+    @GetMapping("/{environment}/{projectId}")
+    public ResponseEntity<List<ConfigDTO>> getConfigurationsByEnvironment(@PathVariable String environment, @PathVariable Long projectId) {
         User user = getCurrentUser();
         if (user == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        List<Configuration> configurations = configurationService.getConfigurationsByEnvironmentAndUser(environment,
-                user);
+        List<Configuration> configurations = configurationService.getConfigurationsByEnvironmentAndUserAndProjectID(environment,
+                user, projectId);
         List<ConfigDTO> configDTOs = configurations.stream()
                 .map(dtoMapper::toConfigDTO)
                 .collect(Collectors.toList());
@@ -100,13 +100,13 @@ public class ConfigurationController {
         return new ResponseEntity<>(envContent, headers, HttpStatus.OK);
     }
 
-    @GetMapping("/{environment}/{key}")
-    public ResponseEntity<ConfigDTO> getConfiguration(@PathVariable String environment, @PathVariable String key) {
+    @GetMapping("/{environment}/{projectId}/{key}")
+    public ResponseEntity<ConfigDTO> getConfiguration(@PathVariable String environment, @PathVariable Long projectId, @PathVariable String key) {
         User user = getCurrentUser();
         if (user == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<Configuration> configuration = configurationService.getConfigurationByKeyEnvironmentAndUser(key,
-                environment, user);
+                environment, user, projectId);
         return configuration.map(config -> ResponseEntity.ok(dtoMapper.toConfigDTO(config)))
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -138,56 +138,24 @@ public class ConfigurationController {
             configuration.setIsSensitive(configRequest.isSensitive());
         } else {
             // Yeni oluştur
-            configuration = dtoMapper.toConfigEntity(configRequest, user);
+            configuration = dtoMapper.toConfigEntity(configRequest, user , project);
         }
 
         Configuration savedConfig = configurationService.saveConfiguration(configuration);
         return ResponseEntity.ok(dtoMapper.toConfigDTO(savedConfig));
     }
 
-    @PutMapping("/{environment}/{key}")
-    public ResponseEntity<ConfigDTO> updateConfiguration(
-            @PathVariable String environment,
-            @PathVariable String key,
-            @Valid @RequestBody UpdateConfigRequestDTO configRequest) {
+
+    @DeleteMapping("/{environment}/{id}")
+    public ResponseEntity<Void> deleteConfiguration(@PathVariable String environment, @PathVariable Long id) {
         try {
             User user = getCurrentUser();
             if (user == null)
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-            Optional<Configuration> existingConfigOpt = configurationService
-                    .getConfigurationByKeyEnvironmentAndUser(key, environment, user);
-            if (existingConfigOpt.isEmpty()) {
+            if (!configurationService.existsConfiguration(id, environment, user)) {
                 return ResponseEntity.notFound().build();
             }
-
-            Configuration existingConfig = existingConfigOpt.get();
-            if (configRequest.getValue() != null) {
-                existingConfig.setValue(configRequest.getValue());
-            }
-            if (configRequest.getDescription() != null) {
-                existingConfig.setDescription(configRequest.getDescription());
-            }
-
-            Configuration updatedConfig = configurationService.saveConfiguration(existingConfig);
-            return ResponseEntity.ok(dtoMapper.toConfigDTO(updatedConfig));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-    }
-
-    @DeleteMapping("/{environment}/{key}")
-    public ResponseEntity<Void> deleteConfiguration(@PathVariable String environment, @PathVariable String key) {
-        try {
-            User user = getCurrentUser();
-            if (user == null)
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            if (!configurationService.existsConfiguration(key, environment, user)) {
-                return ResponseEntity.notFound().build();
-            }
-            configurationService.deleteConfiguration(key, environment);
+            configurationService.deleteConfiguration(id, environment);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

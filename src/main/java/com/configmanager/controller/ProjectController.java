@@ -76,6 +76,19 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.CREATED).body(dtoMapper.toProjectDTO(savedProject));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ProjectDTO> getProjectById(@PathVariable Long id) {
+        User user = getCurrentUser();
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        Project project = projectService.getProjectByIdAndUser(id, user);
+        if (project == null)
+            return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok(dtoMapper.toProjectDTO(project));
+    }
+
     // 3. Proje güncelle
     @PutMapping("/{id}")
     public ResponseEntity<ProjectDTO> updateProject(
