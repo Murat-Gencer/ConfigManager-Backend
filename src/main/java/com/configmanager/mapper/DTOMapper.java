@@ -55,4 +55,15 @@ public class DTOMapper {
                 .updatedAt(project.getUpdatedAt())
                 .build();
     }
+    
+    public ProjectDTO toProjectDTO(Project project, String apiKey) {
+        return ProjectDTO.builder()
+                .id(project.getId())
+                .name(project.getName())
+                .description(project.getDescription())
+                .createdAt(project.getCreatedAt())
+                .updatedAt(project.getUpdatedAt())
+                .apiKey(apiKey)
+                .build();
+    }
 }

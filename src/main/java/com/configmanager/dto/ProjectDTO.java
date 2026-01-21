@@ -23,5 +23,7 @@ public class ProjectDTO {
 
     private LocalDateTime createdAt; // Sadece response'ta dolu
     private LocalDateTime updatedAt;
+    
+    private String apiKey; // Project'e ait API key
 
 }

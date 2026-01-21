@@ -39,6 +39,10 @@ public class ApiKey {
     @JoinColumn(name = "user_id")
     private User user;
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -47,10 +51,11 @@ public class ApiKey {
     // Constructors
     public ApiKey() {}
     
-    public ApiKey(String name, String key, User user) {
+    public ApiKey(String name, String key, User user, Project project) {
         this.name = name;
         this.key = key;
         this.user = user;
+        this.project = project;
     }
     
     // Getters and Setters
@@ -80,4 +85,7 @@ public class ApiKey {
     
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    
+    public Project getProject() { return project; }
+    public void setProject(Project project) { this.project = project; }
 }
