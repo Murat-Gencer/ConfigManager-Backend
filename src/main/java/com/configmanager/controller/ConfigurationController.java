@@ -3,6 +3,7 @@ package com.configmanager.controller;
 import com.configmanager.dto.BatchConfigRequestDTO;
 import com.configmanager.dto.ConfigDTO;
 import com.configmanager.dto.CreateConfigRequestDTO;
+import com.configmanager.dto.ErrorResponseDTO;
 import com.configmanager.dto.UpdateConfigRequestDTO;
 import com.configmanager.entity.Configuration;
 import com.configmanager.entity.Project;
@@ -53,10 +54,16 @@ public class ConfigurationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ConfigDTO>> getAllConfigurations() {
+    public ResponseEntity<?> getAllConfigurations() {
         User user = getCurrentUser();
-        if (user == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null) {
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Oturum geçersiz"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
         List<Configuration> configurations = configurationService.getAllConfigurationsByUser(user);
         List<ConfigDTO> configDTOs = configurations.stream()
                 .map(dtoMapper::toConfigDTO)
@@ -71,10 +78,16 @@ public class ConfigurationController {
     }
 
     @GetMapping("/{environment}/{projectId}")
-    public ResponseEntity<List<ConfigDTO>> getConfigurationsByEnvironment(@PathVariable String environment, @PathVariable Long projectId) {
+    public ResponseEntity<?> getConfigurationsByEnvironment(@PathVariable String environment, @PathVariable Long projectId) {
         User user = getCurrentUser();
-        if (user == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null) {
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Oturum geçersiz"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
         List<Configuration> configurations = configurationService.getConfigurationsByEnvironmentAndUserAndProjectID(environment,
                 user, projectId);
         List<ConfigDTO> configDTOs = configurations.stream()
@@ -101,10 +114,16 @@ public class ConfigurationController {
     }
 
     @GetMapping("/{environment}/{projectId}/{key}")
-    public ResponseEntity<ConfigDTO> getConfiguration(@PathVariable String environment, @PathVariable Long projectId, @PathVariable String key) {
+    public ResponseEntity<?> getConfiguration(@PathVariable String environment, @PathVariable Long projectId, @PathVariable String key) {
         User user = getCurrentUser();
-        if (user == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null) {
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Oturum geçersiz"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
         Optional<Configuration> configuration = configurationService.getConfigurationByKeyEnvironmentAndUser(key,
                 environment, user, projectId);
         return configuration.map(config -> ResponseEntity.ok(dtoMapper.toConfigDTO(config)))
@@ -112,14 +131,26 @@ public class ConfigurationController {
     }
 
     @PostMapping
-    public ResponseEntity<ConfigDTO> createConfiguration(@Valid @RequestBody CreateConfigRequestDTO configRequest) {
+    public ResponseEntity<?> createConfiguration(@Valid @RequestBody CreateConfigRequestDTO configRequest) {
         User user = getCurrentUser();
-        if (user == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null) {
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Oturum geçersiz"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
 
         Project project = projectService.getProjectByIdAndUser(configRequest.getProjectId(), user);
-        if (project == null)
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (project == null) {
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                "Bu projeye erişim yetkiniz yok"
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
 
         // Varsa güncelle, yoksa yeni oluştur
         Optional<Configuration> existingConfig = configurationService
@@ -147,18 +178,34 @@ public class ConfigurationController {
 
 
     @DeleteMapping("/{environment}/{id}")
-    public ResponseEntity<Void> deleteConfiguration(@PathVariable String environment, @PathVariable Long id) {
+    public ResponseEntity<?> deleteConfiguration(@PathVariable String environment, @PathVariable Long id) {
         try {
             User user = getCurrentUser();
-            if (user == null)
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            if (user == null) {
+                ErrorResponseDTO error = new ErrorResponseDTO(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Unauthorized",
+                    "Oturum geçersiz"
+                );
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
             if (!configurationService.existsConfiguration(id, environment, user)) {
-                return ResponseEntity.notFound().build();
+                ErrorResponseDTO error = new ErrorResponseDTO(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Not Found",
+                    "Konfigürasyon bulunamadı"
+                );
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
             }
             configurationService.deleteConfiguration(id, environment);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                "Silme işlemi sırasında hata oluştu"
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -174,15 +221,26 @@ public class ConfigurationController {
     }
 
     @PostMapping("/batch")
-    public ResponseEntity<List<ConfigDTO>> createConfigurationsBatch(
+    public ResponseEntity<?> createConfigurationsBatch(
             @Valid @RequestBody BatchConfigRequestDTO batchRequest) {
         User user = getCurrentUser();
-        if (user == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null) {
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Oturum geçersiz"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
 
         Project project = projectService.getProjectByIdAndUser(batchRequest.getProjectId(), user);
         if (project == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                "Bu projeye erişim yetkiniz yok"
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
 
         List<Configuration> savedConfigs = new ArrayList<>();

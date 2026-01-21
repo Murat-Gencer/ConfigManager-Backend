@@ -1,5 +1,6 @@
 package com.configmanager.controller;
 
+import com.configmanager.dto.ErrorResponseDTO;
 import com.configmanager.dto.LoginRequestDTO;
 import com.configmanager.dto.LoginResponseDTO;
 import com.configmanager.entity.User;
@@ -46,11 +47,21 @@ public class AuthController {
             userOpt = userRepository.findByEmail(loginRequest.getUsernameOrEmail());
         }
         if (userOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kullanıcı bulunamadı");
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Kullanıcı bulunamadı"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
         User user = userOpt.get();
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Şifre hatalı");
+            ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Şifre hatalı"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
         String token = generateJwtToken(user);
         LoginResponseDTO response = dtoMapper.toLoginResponseDTO(user, token);
