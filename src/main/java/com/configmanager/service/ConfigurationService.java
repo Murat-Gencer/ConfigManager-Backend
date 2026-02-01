@@ -133,4 +133,9 @@ public class ConfigurationService {
             Project project) {
         return configurationRepository.findByKeyAndEnvironmentAndProject(key, environment, project);
     }
+       public Optional<Configuration> getConfigurationById(Long id) {
+        return configurationRepository.findById(id);
+    }
 }
+    
+ 

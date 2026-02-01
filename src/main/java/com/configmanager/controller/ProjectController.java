@@ -10,6 +10,7 @@ import com.configmanager.entity.User;
 import com.configmanager.entity.Configuration;
 import com.configmanager.mapper.DTOMapper;
 import com.configmanager.repository.UserRepository;
+import com.configmanager.service.AuditLogService;
 import com.configmanager.service.ProjectService;
 import com.configmanager.service.ConfigurationService;
 import jakarta.validation.Valid;
@@ -39,6 +40,9 @@ public class ProjectController {
 
     @Autowired
     private DTOMapper dtoMapper;
+    
+    @Autowired
+    private AuditLogService auditLogService;
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -90,6 +94,11 @@ public class ProjectController {
 
         Project savedProject = projectService.save(project);
         var apiKey = projectService.getApiKeyByProject(savedProject);
+        
+        // Audit log
+        auditLogService.createLog(user, "CREATE_PROJECT", "PROJECT", savedProject.getId(), 
+            savedProject.getName(), "Yeni proje oluşturuldu: " + savedProject.getName());
+        
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(dtoMapper.toProjectDTO(savedProject, apiKey != null ? apiKey.getKey() : null));
     }
@@ -149,6 +158,11 @@ public class ProjectController {
         project.setDescription(request.getDescription());
 
         Project updatedProject = projectService.save(project);
+        
+        // Audit log
+        auditLogService.createLog(user, "UPDATE_PROJECT", "PROJECT", updatedProject.getId(), 
+            updatedProject.getName(), "Proje güncellendi: " + updatedProject.getName());
+        
         return ResponseEntity.ok(dtoMapper.toProjectDTO(updatedProject));
     }
 
@@ -175,7 +189,13 @@ public class ProjectController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
 
+        String projectName = project.getName();
         projectService.delete(project);
+        
+        // Audit log
+        auditLogService.createLog(user, "DELETE_PROJECT", "PROJECT", id, 
+            projectName, "Proje silindi: " + projectName);
+        
         return ResponseEntity.noContent().build();
     }
 

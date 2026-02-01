@@ -4,11 +4,11 @@ import com.configmanager.dto.BatchConfigRequestDTO;
 import com.configmanager.dto.ConfigDTO;
 import com.configmanager.dto.CreateConfigRequestDTO;
 import com.configmanager.dto.ErrorResponseDTO;
-import com.configmanager.dto.UpdateConfigRequestDTO;
 import com.configmanager.entity.Configuration;
 import com.configmanager.entity.Project;
 import com.configmanager.entity.User;
 import com.configmanager.mapper.DTOMapper;
+import com.configmanager.service.AuditLogService;
 import com.configmanager.service.ConfigurationService;
 import com.configmanager.service.ProjectService;
 
@@ -46,6 +46,9 @@ public class ConfigurationController {
 
     @Autowired
     private DTOMapper dtoMapper;
+    
+    @Autowired
+    private AuditLogService auditLogService;
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -104,7 +107,14 @@ public class ConfigurationController {
 
     @GetMapping("/{environment}/export/env")
     public ResponseEntity<String> exportAsDotEnv(@PathVariable String environment) {
+        User user = getCurrentUser();
         String envContent = configurationService.generateDotEnvFormat(environment);
+
+        // Audit log - Export işlemi
+        if (user != null) {
+            auditLogService.createLog(user, "EXPORT_CONFIG", "CONFIGURATION", null, environment, 
+                "Environment export edildi: " + environment);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
@@ -160,8 +170,10 @@ public class ConfigurationController {
                         project);
 
         Configuration configuration;
+        boolean isUpdate = false;
         if (existingConfig.isPresent()) {
             // Güncelle
+            isUpdate = true;
             configuration = existingConfig.get();
             configuration.setValue(configRequest.getValue());
             configuration.setDescription(configRequest.getDescription());
@@ -173,6 +185,13 @@ public class ConfigurationController {
         }
 
         Configuration savedConfig = configurationService.saveConfiguration(configuration);
+        
+        // Audit log
+        String action = isUpdate ? "UPDATE_CONFIG" : "CREATE_CONFIG";
+        String description = isUpdate ? "Konfigürasyon güncellendi" : "Yeni konfigürasyon oluşturuldu";
+        auditLogService.createLog(user, action, "CONFIGURATION", savedConfig.getId(), 
+            savedConfig.getKey(), description + ": " + savedConfig.getKey() + " (" + savedConfig.getEnvironment() + ")");
+        
         return ResponseEntity.ok(dtoMapper.toConfigDTO(savedConfig));
     }
 
@@ -197,7 +216,19 @@ public class ConfigurationController {
                 );
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
             }
+            
+            // Audit log için config bilgisini al
+            Optional<Configuration> configOpt = configurationService.getConfigurationById(id);
+            
             configurationService.deleteConfiguration(id, environment);
+            
+            // Audit log
+            if (configOpt.isPresent()) {
+                Configuration config = configOpt.get();
+                auditLogService.createLog(user, "DELETE_CONFIG", "CONFIGURATION", id, 
+                    config.getKey(), "Konfigürasyon silindi: " + config.getKey() + " (" + environment + ")");
+            }
+            
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             ErrorResponseDTO error = new ErrorResponseDTO(

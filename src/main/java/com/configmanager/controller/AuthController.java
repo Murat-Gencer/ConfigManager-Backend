@@ -6,6 +6,7 @@ import com.configmanager.dto.LoginResponseDTO;
 import com.configmanager.entity.User;
 import com.configmanager.mapper.DTOMapper;
 import com.configmanager.repository.UserRepository;
+import com.configmanager.service.AuditLogService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.validation.Valid;
@@ -33,6 +34,9 @@ public class AuthController {
     
     @Autowired
     private DTOMapper dtoMapper;
+    
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Value("${app.jwt.secret}")
     private String jwtSecret;
@@ -47,6 +51,7 @@ public class AuthController {
             userOpt = userRepository.findByEmail(loginRequest.getUsernameOrEmail());
         }
         if (userOpt.isEmpty()) {
+            auditLogService.createFailureLog(null, "LOGIN", "USER", "Kullanıcı bulunamadı: " + loginRequest.getUsernameOrEmail());
             ErrorResponseDTO error = new ErrorResponseDTO(
                 HttpStatus.UNAUTHORIZED.value(),
                 "Unauthorized",
@@ -56,6 +61,7 @@ public class AuthController {
         }
         User user = userOpt.get();
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            auditLogService.createFailureLog(user, "LOGIN", "USER", "Hatalı şifre girişimi");
             ErrorResponseDTO error = new ErrorResponseDTO(
                 HttpStatus.UNAUTHORIZED.value(),
                 "Unauthorized",
@@ -65,6 +71,10 @@ public class AuthController {
         }
         String token = generateJwtToken(user);
         LoginResponseDTO response = dtoMapper.toLoginResponseDTO(user, token);
+        
+        // Başarılı login audit log
+        auditLogService.createLog(user, "LOGIN", "USER", user.getId(), user.getUsername(), "Başarılı giriş");
+        
         return ResponseEntity.ok(response);
     }
 
