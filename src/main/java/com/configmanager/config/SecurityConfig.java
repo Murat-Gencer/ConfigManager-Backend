@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/favicon.ico").permitAll()
+                .requestMatchers("/health").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/config/**").authenticated()
                 .anyRequest().authenticated()
